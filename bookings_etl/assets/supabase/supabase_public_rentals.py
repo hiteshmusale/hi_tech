@@ -1,5 +1,5 @@
 # bookings_etl/assets/supabase/supabase_public_rentals.py
-from dagster import asset, Output, MetadataValue, AssetKey
+from dagster import asset, Output, AssetIn, MetadataValue, AssetKey
 
 def create_supabase_public_rentals_asset(tenant_id, tenant_name):
     """Factory function to create a rentals asset for a specific tenant."""
@@ -15,17 +15,20 @@ def create_supabase_public_rentals_asset(tenant_id, tenant_name):
             "description": f"Asset representing the 'rentals' table in Supabase public schema for tenant {tenant_name}."
         },
         required_resource_keys={"supabase"},
-        deps=[AssetKey(tokeet_datafeeds_rentals_name)]
+        ins={"tokeet_datafeeds_rentals": AssetIn(AssetKey(tokeet_datafeeds_rentals_name))}
+    
     )
-    def supabase_public_rentals(context):
-        tokeet_datafeeds_rentals_name = f"tokeet_datafeeds_rentals_{tenant_name}"
-        tokeet_datafeeds_rentals = AssetKey(tokeet_datafeeds_rentals_name)
-        context.log.info(f"Processed {len(tokeet_datafeeds_rentals)} rental records for tenant {tenant_name}.")
+    def supabase_public_rentals(context, tokeet_datafeeds_rentals):
+        # Process the upstream asset data
+        transformed_data = transform_rentals_data(tokeet_datafeeds_rentals)
+        
+        # Write log and metadata
+        context.log.info(f"Processed {len(transformed_data)} rental records for tenant {tenant_name}.")
         metadata = {
-            "num_rentals": len(tokeet_datafeeds_rentals),
-            "preview": print(tokeet_datafeeds_rentals)
+            "num_rentals": len(transformed_data),
+            "tenant_name": tenant_name
         }
-        return Output(tokeet_datafeeds_rentals, metadata=metadata)
+        return Output(transformed_data, metadata=metadata)
     
     return supabase_public_rentals
 
@@ -36,7 +39,7 @@ def transform_rentals_data(tokeet_datafeeds_rentals):
     transformed_data = tokeet_datafeeds_rentals.copy()
     
     # Example transformation: ensuring IDs are valid UUIDs
-    transformed_data['id'] = transformed_data['id'].apply(lambda x: str(x).lower())
+    #transformed_data['id'] = transformed_data['id'].apply(lambda x: str(x).lower())
     
     # Add any other transformation logic needed
     return transformed_data

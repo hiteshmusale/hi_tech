@@ -25,9 +25,8 @@ tenant_settings = fetch_tenant_settings(supabase)
 all_assets = []
 for tenant in tenant_settings:
     tenant_name = tenant['tenant_name'].replace(" ", "_")
-    
-    # Create Tokeet datafeeds rentals assets
     data_feed_url = tenant['json']['datafeed_rentals']
+    
     tokeet_asset_def = create_tokeet_datafeeds_rentals_asset(tenant['tenant_id'], tenant_name, data_feed_url)
     all_assets.append(tokeet_asset_def)
     
