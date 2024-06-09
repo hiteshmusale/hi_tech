@@ -19,3 +19,12 @@ def supabase_resource(init_context) -> Client:
 def fetch_tenant_settings(supabase: Client):
     response = supabase.table("tenant_settings_view").select("*").eq("active", True).eq("type", "etl_bookings").execute()
     return response.data
+
+def supabase_upsert(supabase: Client, table: str, upsert_data: list) -> bool:
+    try:
+        query = supabase.table(table).upsert(upsert_data)
+        result = query.execute()
+        return bool(result)
+    except Exception as e:
+        print(f"Error upserting data: {e}")
+        return False
