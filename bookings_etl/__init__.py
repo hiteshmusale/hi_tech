@@ -3,7 +3,10 @@ from dagster import Definitions, build_init_resource_context, AssetKey
 #from bookings_etl.jobs.materialize_assets import materialize_assets_job
 from bookings_etl.resources.supabase import supabase_resource, fetch_tenant_settings
 from bookings_etl.assets.tokeet_datafeeds import create_tokeet_datafeeds_rentals_asset
+from bookings_etl.assets.tokeet_datafeeds import create_tokeet_datafeeds_bookings_asset
 from bookings_etl.assets.supabase import create_supabase_public_rentals_asset
+from bookings_etl.assets.supabase import create_supabase_public_bookings_asset
+from bookings_etl.assets.supabase import create_supabase_public_booking_values_asset
 import os
 from dotenv import load_dotenv
 
@@ -25,15 +28,30 @@ tenant_settings = fetch_tenant_settings(supabase)
 all_assets = []
 for tenant in tenant_settings:
     tenant_name = tenant['tenant_name'].replace(" ", "_")
-    data_feed_url = tenant['json']['datafeed_rentals']
+    datafeed_url_rentals = tenant['json']['datafeed_rentals']
+    datafeed_url_bookings = tenant['json']['datafeed_bookings']
     
-    tokeet_asset_def = create_tokeet_datafeeds_rentals_asset(tenant['tenant_id'], tenant_name, data_feed_url)
-    all_assets.append(tokeet_asset_def)
+    # Create Tokeet datafeeds rentals asset
+    tokeet_rentals_def = create_tokeet_datafeeds_rentals_asset(tenant['tenant_id'], tenant_name, datafeed_url_rentals)
+    all_assets.append(tokeet_rentals_def)
     
-    # Create Supabase public rentals assets, passing the asset definition directly
-    supabase_asset_def = create_supabase_public_rentals_asset(tenant['tenant_id'], tenant_name)
-    all_assets.append(supabase_asset_def)
-
+    # Create Tokeet datafeeds bookings asset
+    tokeet_bookings_def = create_tokeet_datafeeds_bookings_asset(tenant['tenant_id'], tenant_name, datafeed_url_bookings)
+    all_assets.append(tokeet_bookings_def)
+    
+    # Create Supabase public rentals assets
+    supabase_rentals_def = create_supabase_public_rentals_asset(tenant['tenant_id'], tenant_name)
+    all_assets.append(supabase_rentals_def)
+    
+    # Create Supabase public bookings asset
+    supabase_bookings_def = create_supabase_public_bookings_asset(tenant['tenant_id'], tenant_name)
+    all_assets.append(supabase_bookings_def)
+    
+    # Create Supabase public booking values asset
+    supabase_booking_values_def = create_supabase_public_booking_values_asset(tenant['tenant_id'], tenant_name)
+    all_assets.append(supabase_booking_values_def)
+    
+    
 # Define resources
 resource_defs = {
     "supabase": supabase_resource
