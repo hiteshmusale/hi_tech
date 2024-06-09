@@ -12,7 +12,7 @@ def create_supabase_public_rentals_asset(tenant_id, tenant_name):
     
     @asset(
         name=f"supabase_public_rentals_{tenant_name}",
-        group_name="supabase_public",
+        group_name=f"bookings_etl_{tenant_name}",
         metadata={
             "tenant_id": tenant_id,
             "tenant_name": tenant_name,

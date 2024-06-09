@@ -2,11 +2,8 @@ from dagster import Definitions, build_init_resource_context, AssetKey
 #from bookings_etl.jobs.initialize_assets import initialize_bookings_assets
 #from bookings_etl.jobs.materialize_assets import materialize_assets_job
 from bookings_etl.resources.supabase import supabase_resource, fetch_tenant_settings
-from bookings_etl.assets.tokeet_datafeeds import create_tokeet_datafeeds_rentals_asset
-from bookings_etl.assets.tokeet_datafeeds import create_tokeet_datafeeds_bookings_asset
-from bookings_etl.assets.supabase import create_supabase_public_rentals_asset
-from bookings_etl.assets.supabase import create_supabase_public_bookings_asset
-from bookings_etl.assets.supabase import create_supabase_public_booking_values_asset
+from bookings_etl.assets.tokeet_datafeeds import *
+from bookings_etl.assets.supabase import *
 import os
 from dotenv import load_dotenv
 

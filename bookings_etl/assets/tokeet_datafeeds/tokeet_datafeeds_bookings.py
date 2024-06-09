@@ -6,7 +6,7 @@ def create_tokeet_datafeeds_bookings_asset(tenant_id, tenant_name, data_feed_url
     """Factory function to create a bookings asset for a specific tenant."""
     @asset(
         name=f"tokeet_datafeeds_bookings_{tenant_name}",
-        group_name="tokeet_datafeeds",
+        group_name=f"bookings_etl_{tenant_name}",
         metadata={
             "tenant_id": tenant_id,
             "tenant_name": tenant_name,
