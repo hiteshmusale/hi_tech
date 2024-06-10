@@ -45,12 +45,14 @@ def create_supabase_public_bookings_asset(tenant_id, tenant_name):
         
         # Upsert to supabase
         try:
-            # Upsert to supabase
             supabase = context.resources.supabase
+            context.log.info(f"Upsert data: {upsert_dict}")  # Log the upsert data
             if supabase_upsert(supabase, "bookings", upsert_dict):
                 context.log.info(f"Upserted {len(upsert_dict)} rental records for tenant {tenant_name} ({tenant_id}).")
             else:
-                raise Exception(f"Failed to upsert rental records for tenant {tenant_name} ({tenant_id}).")
+                error_message = f"Unknown error during upsert for tenant {tenant_name} ({tenant_id})"
+                context.log.error(error_message)
+                raise
         except Exception as e:
             error_message = f"Error during upsert for tenant {tenant_name} ({tenant_id}): {str(e)}"
             context.log.error(error_message)

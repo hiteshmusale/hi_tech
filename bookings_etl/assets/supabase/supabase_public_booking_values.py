@@ -4,6 +4,7 @@ from bookings_etl.utils import *
 from bookings_etl.resources.supabase import *
 import pandas as pd
 import numpy as np
+import uuid
 
 def create_supabase_public_booking_values_asset(tenant_id, tenant_name):
     """Factory function to create a booking values asset for a specific tenant."""
@@ -25,99 +26,124 @@ def create_supabase_public_booking_values_asset(tenant_id, tenant_name):
     
     )
     def supabase_public_booking_values(context, supabase_public_bookings):
-        # Transform the data
-        upsert_dict = None
-        context.log.info(f"Processed {len(upsert_dict)} booking records for tenant {tenant_name} ({tenant_id}).")
+        # Ensure bookings_df is a DataFrame
+        if isinstance(supabase_public_bookings, list):
+            bookings_df = pd.DataFrame(supabase_public_bookings)
+        elif isinstance(supabase_public_bookings, pd.DataFrame):
+            bookings_df = supabase_public_bookings
+        else:
+            raise ValueError("supabase_public_bookings should be a list or a DataFrame")
         
-        # Find unmatched rentals
-        unmatched_rentals = [entry for entry in upsert_dict if entry['rental_id'] is None]
-        num_unmatched = len(unmatched_rentals)
+        # Discover missing_booking_values
+        supabase = context.resources.supabase
+        existing_booking_values = fetch_booking_value_ids(supabase, tenant_id)
         
-        # Return the upserted data
+        missing_bookings_df = bookings_df[~bookings_df["booking_id"].isin(existing_booking_values)]
+        context.log.info(f"Existing missing booking values: {missing_bookings_df}")
+        
+        # Append cleaning fees to the DataFrame
+        rental_settings_df = fetch_rental_cleaning_fees(supabase, tenant_id)
+        missing_bookings_df = missing_bookings_df.merge(rental_settings_df, how='left', on='rental_id')
+        
+        # Initialize the list to store upsert dictionaries
+        upsert_list = []
+
+        # Loop through each row in the DataFrame
+        for index, row in missing_bookings_df.iterrows():
+            upsert = calculate_booking_values(row, tenant_id)
+            upsert_list.append(upsert)
+    
+        # Log & prepare metadata
+        context.log.info(f"Processed {len(upsert_list)} booking records for tenant {tenant_name} ({tenant_id}).")
         metadata = {
-            "num_bookings": len(upsert_dict),
-            "preview": upsert_dict[:5],
-            "nunmatched_rental_count": num_unmatched,
-            "unmatched_rental_rows": unmatched_rentals[:10]
+            "num_booking_values": len(upsert_list),
+            "preview": upsert_list[:5]
         }
         
         # Upsert to supabase
-        """
         try:
-            # Upsert to supabase
-            supabase = context.resources.supabase
-            if supabase_upsert(supabase, "bookings", upsert_dict):
-                context.log.info(f"Upserted {len(upsert_dict)} rental records for tenant {tenant_name} ({tenant_id}).")
+            if supabase_upsert(supabase, "booking_values", upsert_list):
+                context.log.info(f"Upserted {len(upsert_list)} booking_value records for tenant {tenant_name} ({tenant_id}).")
             else:
-                raise Exception(f"Failed to upsert rental records for tenant {tenant_name} ({tenant_id}).")
+                raise Exception(f"Failed to upsert booking_value records for tenant {tenant_name} ({tenant_id}).")
         except Exception as e:
-            error_message = f"Error during upsert for tenant {tenant_name} ({tenant_id}): {str(e)}"
+            error_message = f"Error during booking_value upsert for tenant {tenant_name} ({tenant_id}): {str(e)}"
             context.log.error(error_message)
             raise
-        return Output(upsert_dict, metadata=metadata)
-        """
+        
+        return Output(upsert_list, metadata=metadata)
     
     return supabase_public_booking_values
-"""
-def transform_supabase_public_bookings(bookings_df, rentals_df, tenant_id):
-    # Rename columns lower case and replace spaces with underscores
-    bookings_df.columns = bookings_df.columns.str.lower().str.replace(' ', '_')
-    
-    # Clean booking ids
-    bookings_df["id"] = bookings_df["booking_id"].apply(clean_uuid)
-    
-    # Add a new column "tenant_id" with the tenant ID
-    bookings_df["tenant_id"] = tenant_id
-    
-    # Add rental_id column
-    # Ensure the columns 'rental' and 'name' are properly trimmed and lowercased for matching
-    bookings_df['rental_name_match'] = bookings_df['rental'].str.strip().str.lower()
-    rentals_df['rental_name'] = rentals_df['Name'].str.strip().str.lower()
-    
-    # Prepare the rentals DataFrame for merging
-    rentals_df["rental_id"] = rentals_df["Pkey"].apply(clean_uuid)
-    rentals_df = rentals_df[["rental_id", "rental_name"]]
 
-    # Merge the DataFrames to add the rental_id to the bookings DataFrame
-    bookings_df = pd.merge(
-        bookings_df,
-        rentals_df,
-        left_on='rental_name_match',
-        right_on='rental_name',
-        how='left'
-    )
-    
-    # Replace NaN values with None
-    bookings_df = bookings_df.replace({np.nan: None})
-    
-    # Keep only required columns
-    required_columns = [
-    "id",
-    "tenant_id",
-    "name",
-    "email",
-    "guest_secondary_emails",
-    "booking_status",
-    "rental",
-    "arrive",
-    "depart",
-    "nights",
-    "received",
-    "booking_id",
-    "inquiry_id",
-    "source",
-    "adults",
-    "children",
-    "total_cost",
-    "rental_id"
-]
-    bookings_df = bookings_df[required_columns]
-    
-    # Convert datetime columns to ISO 8601 strings
-    datetime_columns = ["arrive", "depart", "received"]
-    for col in datetime_columns:
-        if col in bookings_df.columns:
-            bookings_df[col] = pd.to_datetime(bookings_df[col]).dt.strftime('%Y-%m-%dT%H:%M:%S')
+def calculate_booking_values(booking: pd.Series, tenant_id: str) -> dict:
+    """
+    Calculate the booking values based on the provided booking information.
 
-    return bookings_df.to_dict(orient='records')
-"""
+    Args:
+        booking (pd.Series): A pandas Series object containing the booking information.
+        tenant_id (str): The ID of the tenant.
+
+    Returns:
+        dict: A dictionary containing the calculated booking values rounded to 2DP.
+
+    """
+    id = str(uuid.uuid4())
+    source = booking['source'].lower()
+    tokeet_total = booking['total_cost']
+    cleaning_fee = booking.get('cleaning_fee', 0)
+    nights = booking.get('nights', 1)  # Default to 1 to avoid division by zero
+
+    # Calculate gross amount based on source
+    if source in ['airbnb', 'airbnbapiv2']:
+        revenue_gross = tokeet_total / 0.82
+        booking_fees_perc = 0.18
+        card_fees_perc = 0
+    elif source in ['booking.com', 'expedia', 'expedia.com']:
+        revenue_gross = tokeet_total + cleaning_fee
+        booking_fees_perc = 0.15
+        card_fees_perc = 0.03
+    else:  # Direct or other sources
+        revenue_gross = tokeet_total
+        booking_fees_perc = 0
+        card_fees_perc = 0
+        
+    # Additional revenue calculations
+    revenue_rate = revenue_gross - cleaning_fee
+    booking_fees = revenue_gross * booking_fees_perc
+    card_fees = revenue_gross * card_fees_perc
+    revenue_payout = revenue_gross - booking_fees - card_fees
+    
+    # ADR calculations
+    if nights > 0:
+        adr_gross = revenue_gross / nights
+        adr_rate = revenue_rate / nights
+        adr_payout = revenue_payout / nights
+    else:
+        adr_gross = adr_rate = adr_payout = 0
+
+    # Create a new dictionary with the calculated values
+    upsert = {
+        'id': id,
+        'booking_id': booking['id'],
+        'tenant_id': tenant_id,
+        'revenue_gross': revenue_gross,
+        'cleaning_fees': cleaning_fee,
+        'revenue_rate': revenue_rate,
+        'booking_fees': booking_fees,
+        'card_fees': card_fees,
+        'revenue_payout': revenue_payout,
+        'adr_gross': adr_gross,
+        'adr_rate': adr_rate,
+        'adr_payout': adr_payout,
+        'type': 'auto',
+        'active': True
+    }
+    
+    # Round all numerical values to 2 decimal places and convert to native Python types
+    for key, value in upsert.items():
+        if isinstance(value, (np.integer, np.int64)):
+            upsert[key] = int(value)
+        elif isinstance(value, (np.float64, float)):
+            upsert[key] = round(float(value), 2)
+
+    return upsert
