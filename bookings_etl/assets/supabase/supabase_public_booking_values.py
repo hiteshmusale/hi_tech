@@ -38,7 +38,7 @@ def create_supabase_public_booking_values_asset(tenant_id, tenant_name):
         supabase = context.resources.supabase
         existing_booking_values = fetch_booking_value_ids(supabase, tenant_id)
         
-        missing_bookings_df = bookings_df[~bookings_df["booking_id"].isin(existing_booking_values)]
+        missing_bookings_df = bookings_df[~bookings_df["id"].isin(existing_booking_values)]
         context.log.info(f"Existing missing booking values: {missing_bookings_df}")
         
         # Append cleaning fees to the DataFrame
@@ -60,19 +60,22 @@ def create_supabase_public_booking_values_asset(tenant_id, tenant_name):
             "preview": upsert_list[:5]
         }
         
-        # Upsert to supabase
-        try:
-            if supabase_upsert(supabase, "booking_values", upsert_list):
-                context.log.info(f"Upserted {len(upsert_list)} booking_value records for tenant {tenant_name} ({tenant_id}).")
-            else:
-                raise Exception(f"Failed to upsert booking_value records for tenant {tenant_name} ({tenant_id}).")
-        except Exception as e:
-            error_message = f"Error during booking_value upsert for tenant {tenant_name} ({tenant_id}): {str(e)}"
-            context.log.error(error_message)
-            raise
-        
+        # Check if upsert_list is empty before attempting the upsert
+        if upsert_list:
+            # Upsert to supabase
+            try:
+                if supabase_upsert(supabase, "booking_values", upsert_list):
+                    context.log.info(f"Upserted {len(upsert_list)} booking_value records for tenant {tenant_name} ({tenant_id}).")
+                else:
+                    raise Exception(f"Failed to upsert booking_value records for tenant {tenant_name} ({tenant_id}).")
+            except Exception as e:
+                error_message = f"Error during booking_value upsert for tenant {tenant_name} ({tenant_id}): {str(e)}"
+                context.log.error(error_message)
+                raise
+        else:
+            context.log.info(f"No booking_value records to upsert for tenant {tenant_name} ({tenant_id}).")
+            
         return Output(upsert_list, metadata=metadata)
-    
     return supabase_public_booking_values
 
 def calculate_booking_values(booking: pd.Series, tenant_id: str) -> dict:
