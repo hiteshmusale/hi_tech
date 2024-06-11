@@ -90,8 +90,8 @@ def transform_supabase_public_bookings(bookings_df, rentals_df, tenant_id):
     )
     
     # Replace NaN values with None
-    bookings_df = bookings_df.replace({np.nan: None})
-    
+    bookings_df = bookings_df.replace({np.nan: None, "": None})
+
     # Keep only required columns
     required_columns = [
     "id",
@@ -119,6 +119,22 @@ def transform_supabase_public_bookings(bookings_df, rentals_df, tenant_id):
     datetime_columns = ["arrive", "depart", "received"]
     for col in datetime_columns:
         if col in bookings_df.columns:
-            bookings_df[col] = pd.to_datetime(bookings_df[col]).dt.strftime('%Y-%m-%dT%H:%M:%S')
+            bookings_df[col] = pd.to_datetime(bookings_df[col])
+            bookings_df[col] = bookings_df[col].where(bookings_df[col].notna(), None).dt.strftime('%Y-%m-%dT%H:%M:%S')
 
-    return bookings_df.to_dict(orient='records')
+    # Replace empty strings with None for datetime columns
+    bookings_df[datetime_columns] = bookings_df[datetime_columns].replace("", None)
+    
+    # Explicitly replace NaN values in all columns with None
+    bookings_df = bookings_df.replace({pd.NaT: None, np.nan: None, "": None})
+    
+    # Custom function to handle NaN and empty string
+    def replace_invalid(obj):
+        if pd.isna(obj) or obj == "":
+            return None
+        return obj
+
+    # Convert DataFrame to dictionary with custom handling for NaN and empty strings
+    bookings_dict = json.loads(json.dumps(bookings_df.to_dict(orient='records'), default=replace_invalid))
+
+    return bookings_dict
