@@ -31,7 +31,6 @@ def create_supabase_public_rentals_asset(tenant_id, tenant_name):
         metadata = {
             "num_rentals": len(upsert_dict),
             "rental_ids": [rental["id"] for rental in upsert_dict],
-            "tenant_ids": [rental["tenant_id"] for rental in upsert_dict],
             "preview": upsert_dict[:5],
         }
         # Upsert to supabase

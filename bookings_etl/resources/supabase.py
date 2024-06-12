@@ -33,7 +33,7 @@ def supabase_upsert(supabase: Client, table: str, upsert_data: list) -> bool:
     # Cleanse the data before upserting
     upsert_data = replace_none_with_empty_string(upsert_data)
     
-    key_columns = ['id', 'booking_id']
+    key_columns = ['id']
     upsert_data = remove_duplicates(upsert_data, key_columns)
     
     print(f"Upserting to {table}: {upsert_data}")
@@ -54,10 +54,10 @@ def fetch_booking_value_ids(supabase: Client, tenant_id: str) -> list:
     return booking_ids
 
 def replace_none_with_empty_string(data):
-    uuid_fields = ['id', 'tenant_id', 'booking_id', 'rental_id']
+    ignore_fields = ['id', 'tenant_id', 'booking_id', 'rental_id', 'bedrooms', 'bathrooms', 'sleep_max', 'arrive', 'depart', 'received']
     
     if isinstance(data, dict):
-        return {k: ("" if v is None and k not in uuid_fields else (None if v is None and k in uuid_fields else v)) for k, v in data.items()}
+        return {k: ("" if v is None and k not in ignore_fields else (None if v is None and k in ignore_fields else v)) for k, v in data.items()}
     elif isinstance(data, list):
         return [replace_none_with_empty_string(item) for item in data]
     else:
