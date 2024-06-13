@@ -22,7 +22,7 @@ def fetch_tenant_settings(supabase: Client):
     response = supabase.table("tenant_settings_view").select("*").eq("active", True).eq("type", "etl_bookings").execute()
     return response.data
 
-def fetch_rental_cleaning_fees(supabase: Client, tenant_id: str) -> pd.DataFrame:
+def fetch_rental_cleaning_fees_df(supabase: Client, tenant_id: str) -> pd.DataFrame:
     response = supabase.table("rental_settings").select("rental_id", "fee_cleaning").eq("tenant_id", tenant_id).execute()
     #if response.error:
     #    raise Exception(f"Error fetching rental settings: {response.error.message}")

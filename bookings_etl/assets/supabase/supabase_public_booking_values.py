@@ -41,25 +41,32 @@ def create_supabase_public_booking_values_asset(tenant_id, tenant_name):
         missing_bookings_df = bookings_df[~bookings_df["id"].isin(existing_booking_values)]
         context.log.info(f"Existing missing booking values: {missing_bookings_df}")
         
+        # Filter out bookings without a rental name
+        rental_missing_df = missing_bookings_df[missing_bookings_df['rental'].isnull() | (missing_bookings_df['rental'] == '')]
+        missing_bookings_df = missing_bookings_df[missing_bookings_df['rental'].notnull() & (missing_bookings_df['rental'] != '')]
+       
         # Append cleaning fees to the DataFrame
-        rental_settings_df = fetch_rental_cleaning_fees(supabase, tenant_id)
+        rental_settings_df = fetch_rental_cleaning_fees_df(supabase, tenant_id)
         missing_bookings_df = missing_bookings_df.merge(rental_settings_df, how='left', on='rental_id')
+        context.log.info(f"Appended fees_cleaning columns: {missing_bookings_df.head(5)}")
         
-        # Initialize the list to store upsert dictionaries
+        # Create upsert list
         upsert_list = []
-
-        # Loop through each row in the DataFrame
+        
         for index, row in missing_bookings_df.iterrows():
             upsert = calculate_booking_values(row, tenant_id)
             upsert_list.append(upsert)
+            
+        context.log.info(f"Upsert list: {upsert_list}")
     
         # Log & prepare metadata
         context.log.info(f"Processed {len(upsert_list)} booking records for tenant {tenant_name} ({tenant_id}).")
         metadata = {
             "num_booking_values": len(upsert_list),
+            "bookings_missing_rental": rental_missing_df.shape[0],
             "preview": upsert_list[:5]
         }
-        
+                
         # Check if upsert_list is empty before attempting the upsert
         if upsert_list:
             # Upsert to supabase
@@ -73,7 +80,7 @@ def create_supabase_public_booking_values_asset(tenant_id, tenant_name):
                 context.log.error(error_message)
                 raise
         else:
-            context.log.info(f"No booking_value records to upsert for tenant {tenant_name} ({tenant_id}).")
+            context.log.info(f"No booking_value records to upsert for tenant {tenant_name} ({tenant_id})./n")
             
         return Output(upsert_list, metadata=metadata)
     return supabase_public_booking_values
@@ -93,7 +100,7 @@ def calculate_booking_values(booking: pd.Series, tenant_id: str) -> dict:
     id = str(uuid.uuid4())
     source = booking['source'].lower()
     tokeet_total = booking['total_cost']
-    cleaning_fee = booking.get('cleaning_fee', 0)
+    cleaning_fee = booking.get('fee_cleaning', 0)
     nights = booking.get('nights', 1)  # Default to 1 to avoid division by zero
 
     # Calculate gross amount based on source
