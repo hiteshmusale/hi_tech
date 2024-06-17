@@ -19,7 +19,7 @@ def supabase_resource(init_context) -> Client:
     return create_client(url, key)
 
 def fetch_tenant_settings(supabase: Client):
-    response = supabase.table("tenant_settings_view").select("*").eq("active", True).eq("type", "etl_bookings").execute()
+    response = supabase.table("tenant_settings_view").select("*").eq("type", "etl_bookings").execute()
     return response.data
 
 def fetch_rental_cleaning_fees_df(supabase: Client, tenant_id: str) -> pd.DataFrame:

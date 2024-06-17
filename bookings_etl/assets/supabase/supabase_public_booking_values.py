@@ -37,19 +37,33 @@ def create_supabase_public_booking_values_asset(tenant_id, tenant_name):
         # Discover missing_booking_values
         supabase = context.resources.supabase
         existing_booking_values = fetch_booking_value_ids(supabase, tenant_id)
-        
+
         missing_bookings_df = bookings_df[~bookings_df["id"].isin(existing_booking_values)]
         context.log.info(f"Existing missing booking values: {missing_bookings_df}")
-        
+
         # Filter out bookings without a rental name
         rental_missing_df = missing_bookings_df[missing_bookings_df['rental'].isnull() | (missing_bookings_df['rental'] == '')]
         missing_bookings_df = missing_bookings_df[missing_bookings_df['rental'].notnull() & (missing_bookings_df['rental'] != '')]
-       
+
         # Append cleaning fees to the DataFrame
         rental_settings_df = fetch_rental_cleaning_fees_df(supabase, tenant_id)
+
+        # Ensure rental_id consistency
+        context.log.info(f"Missing bookings rental_ids: {missing_bookings_df['rental_id'].unique()}")
+        context.log.info(f"Rental settings rental_ids: {rental_settings_df['rental_id'].unique()}")
+
+        # Check for missing rental_ids before merge
+        missing_rental_ids = set(missing_bookings_df['rental_id']) - set(rental_settings_df['rental_id'])
+        if missing_rental_ids:
+            context.log.warning(f"Missing rental settings for rental_ids: {missing_rental_ids}")
+
+        # Perform the merge
         missing_bookings_df = missing_bookings_df.merge(rental_settings_df, how='left', on='rental_id')
+
+        # Replace NaN values in fee_cleaning column with 0
+        missing_bookings_df['fee_cleaning'].fillna(0, inplace=True)
         context.log.info(f"Appended fees_cleaning columns: {missing_bookings_df.head(5)}")
-        
+                
         # Create upsert list
         upsert_list = []
         
@@ -62,8 +76,8 @@ def create_supabase_public_booking_values_asset(tenant_id, tenant_name):
         # Log & prepare metadata
         context.log.info(f"Processed {len(upsert_list)} booking records for tenant {tenant_name} ({tenant_id}).")
         metadata = {
-            "num_booking_values": len(upsert_list),
-            "bookings_missing_rental": rental_missing_df.shape[0],
+            "processed_booking_values": len(upsert_list),
+            "bookings_missing_rental_ids": len(missing_rental_ids),
             "preview": upsert_list[:5]
         }
                 
