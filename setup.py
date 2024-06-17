@@ -5,7 +5,10 @@ setup(
     packages=find_packages(exclude=["bookings_etl_tests"]),
     install_requires=[
         "dagster",
-        "dagster-cloud"
+        "pandas",
+        "dagster-cloud",
+        "supabase",
+        "numpty"
     ],
     extras_require={"dev": ["dagster-webserver", "pytest"]},
 )
