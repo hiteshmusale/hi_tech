@@ -9,7 +9,7 @@ description = "A Dagster project for booking ETL."
 authors = ["Your Name <you@example.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 dagster = "^1.0.0"
 dagit = "^1.0.0"
 python-dotenv = "^0.19.2"
