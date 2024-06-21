@@ -9,6 +9,7 @@ setup(
     packages=find_packages(exclude=["bookings_etl_tests"]),
     install_requires=[
         "dagster==1.7.10",
+        "dagster-cloud",
         "dagit==1.7.10",
         "python-dotenv>=0.21.0",
         "supabase>=2.5.1",
