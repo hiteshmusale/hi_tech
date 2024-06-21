@@ -7,7 +7,7 @@ setup(
         "dagster",
         "pandas",
         "dagster-cloud",
-        "supabase-py",
+        "supabase",
         "numpy"
     ],
     extras_require={"dev": ["dagster-webserver", "pytest"]},

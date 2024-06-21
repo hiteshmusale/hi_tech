@@ -6,14 +6,19 @@ build-backend = "setuptools.build_meta"
 name = "bookings-etl"
 version = "0.1.0"
 description = "A Dagster project for booking ETL."
-authors = ["Your Name <you@example.com>"]
+authors = ["Chris Poulter <chris@shortstaysuccess.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.11"
-dagster = "^1.0.0"
-dagit = "^1.0.0"
-python-dotenv = "^0.19.2"
-supabase = "^0.1.0"
+python = ">=3.11,<3.13"
+dagster = "1.7.10"  
+dagit = "1.7.10"  
+python-dotenv = "^0.21.0"  
+supabase = "^2.5.1"
+dagster-webserver = "1.7.10"
+pendulum = "3.0.0"
+time-machine = "^2.5.0"
+pandas = "^1.3.0"
+numpy = "^1.21.0" 
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
