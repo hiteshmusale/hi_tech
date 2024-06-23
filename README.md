@@ -1,47 +1,59 @@
 # bookings_etl
 
-This is a [Dagster](https://dagster.io/) project scaffolded with [`dagster project scaffold`](https://docs.dagster.io/getting-started/create-new-project).
+This is the main bookings and rental ETL codebase for Short Stay AI.  Supported PMS:
+- Tokeet
+- Hostaway (Soon!)
 
-## Getting started
+## How it works
 
-First, install your Dagster code location as a Python package. By using the --editable flag, pip will install your Python package in ["editable mode"](https://pip.pypa.io/en/latest/topics/local-project-installs/#editable-installs) so that as you develop, local code changes will automatically apply.
+Each tenant has it's own pipeline, as defined in supabase[tenant_settings_json] with type = etl_bookings in this json format:
 
-```bash
-pip install -e ".[dev]"
+```json
+{
+    "type":"tokeet_datafeed",
+    "datafeed_bookings":"url",
+    "datafeed_rentals":"url"
+}
 ```
 
-Then, start the Dagster UI web server:
+The bookings_etl module loops through each tenant setting and create assets using the asset factories.
 
+## Unit testing
+
+Unit tests not yet in place: :o
+
+## Editing the codebase
+
+1. Download this repo
+2. Create venv
 ```bash
-dagster dev
+python -m venv venv
+source venv/bin/activate
 ```
-
-Open http://localhost:3000 with your browser to see the project.
-
-You can start writing assets in `bookings_etl/assets.py`. The assets are automatically loaded into the Dagster code location as you define them.
-
-## Development
-
-### Adding new Python dependencies
-
-You can specify new Python dependencies in `setup.py`.
-
-### Unit testing
-
-Tests are in the `bookings_etl_tests` directory and you can run tests using `pytest`:
-
+3. Install poetry
 ```bash
-pytest bookings_etl_tests
+pip install poetry
 ```
-
-### Schedules and sensors
-
-If you want to enable Dagster [Schedules](https://docs.dagster.io/concepts/partitions-schedules-sensors/schedules) or [Sensors](https://docs.dagster.io/concepts/partitions-schedules-sensors/sensors) for your jobs, the [Dagster Daemon](https://docs.dagster.io/deployment/dagster-daemon) process must be running. This is done automatically when you run `dagster dev`.
-
-Once your Dagster Daemon is running, you can start turning on schedules and sensors for your jobs.
+4. Install dependencies using poetry
+```bash
+poetry install
+```
+5. Run dagster locally
+3. Install poetry
+```bash
+dagster dev -w workspace.yaml
+```
 
 ## Deploy on Dagster Cloud
 
-The easiest way to deploy your Dagster project is to use Dagster Cloud.
+Currently via dagster CLI, but really need to setup github actions so that updates to main are automatically deployed.
 
-Check out the [Dagster Cloud Documentation](https://docs.dagster.cloud) to learn more.
+1. Login to dagster-cloud CLI
+```bash
+dagster-cloud config setup
+```
+2. Deploy to prod using this command: 
+```bash
+dagster-cloud serverless deploy-python-executable --location-name bookings-etl --package-name bookings_etl --python-version=3.11
+```
+3. Cry when it doesn't work.
