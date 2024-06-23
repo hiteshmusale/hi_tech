@@ -1,4 +1,4 @@
 locations:
-- code_source:
-    package_name: bookings_etl
-  location_name: bookings-etl
+  - location_name: bookings-etl
+    code_source:
+      package_name: ./bookings_etl
