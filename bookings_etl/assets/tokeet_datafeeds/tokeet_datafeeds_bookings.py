@@ -39,7 +39,7 @@ def get_bookings(data_feed_url):
     limit = 1000
 
     while True:
-        link = f"{data_feed_url}?sort=guest_arrive&direction=1&booked=1&skip={skip}&limit={limit}"
+        link = f"{data_feed_url}?sort=guest_arrive&direction=1&skip={skip}&limit={limit}"
         temp_data = pd.read_csv(link)
 
         if temp_data.shape == (2, 1):
@@ -48,5 +48,7 @@ def get_bookings(data_feed_url):
         skip += limit
 
     bookings_df = pd.concat([bookings_df, temp])
+    
+    filtered_bookings_df = bookings_df[bookings_df["Booking Status"].isin(["Booked", "Cancelled"])]
 
-    return bookings_df
+    return filtered_bookings_df
