@@ -53,10 +53,10 @@ resource_defs = {
     "supabase": supabase_resource
 }
 
-# Create a schedule that will run this job daily at midnight
+# Create a schedule that will run daily at midnight
 materialize_all_schedule = ScheduleDefinition(
     job=materialize_assets_job,
-    cron_schedule="0 0 * * *",  # Run daily at midnight
+    cron_schedule="0 0 * * *",
     name="daily_materialize_all",
 )
 
