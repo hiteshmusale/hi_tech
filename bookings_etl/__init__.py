@@ -1,6 +1,5 @@
-from dagster import Definitions, build_init_resource_context, AssetKey
-#from bookings_etl.jobs.initialize_assets import initialize_bookings_assets
-#from bookings_etl.jobs.materialize_assets import materialize_assets_job
+from dagster import Definitions, build_init_resource_context, ScheduleDefinition
+from bookings_etl.jobs.materialize_assets import materialize_assets_job
 from bookings_etl.resources.supabase import supabase_resource, fetch_tenant_settings
 from bookings_etl.assets.tokeet_datafeeds import *
 from bookings_etl.assets.supabase import *
@@ -54,9 +53,17 @@ resource_defs = {
     "supabase": supabase_resource
 }
 
+# Create a schedule that will run this job daily at midnight
+materialize_all_schedule = ScheduleDefinition(
+    job=materialize_assets_job,
+    cron_schedule="0 0 * * *",  # Run daily at midnight
+    name="daily_materialize_all",
+)
+
 # Define everything
 defs = Definitions(
     assets=all_assets,
     resources=resource_defs,
-    #jobs=[materialize_assets_job, initialize_bookings_assets],
+    jobs=[materialize_assets_job],
+    schedules=[materialize_all_schedule],
 )

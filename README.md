@@ -54,6 +54,6 @@ dagster-cloud config setup
 ```
 2. Deploy to prod using this command: 
 ```bash
-dagster-cloud serverless deploy-python-executable --location-name bookings-etl --package-name bookings_etl --python-version=3.11
+dagster-cloud serverless deploy-python-executable ./ --location-name bookings-etl --package-name bookings_etl --python-version 3.11
 ```
-3. Cry when it doesn't work.
+

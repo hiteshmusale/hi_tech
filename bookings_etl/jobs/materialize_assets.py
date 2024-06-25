@@ -1,6 +1,6 @@
 # jobs/materialize_assets.py
-from dagster import job
+from dagster import job, AssetSelection, materialize
 
-@job
+@job(selection=AssetSelection.all())
 def materialize_assets_job():
-    pass
+    materialize()
