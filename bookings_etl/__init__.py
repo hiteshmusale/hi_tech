@@ -64,6 +64,12 @@ materialize_all_schedule = ScheduleDefinition(
     name="daily_materialize_all",
 )
 
+materialize_test_schedule = ScheduleDefinition(
+    job=materialize_assets_job,
+    cron_schedule="0 1 * * *",
+    name="test_daily_materialize_all",
+)
+
 # Define everything
 defs = Definitions(
     assets=all_assets,
