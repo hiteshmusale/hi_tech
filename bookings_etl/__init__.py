@@ -75,5 +75,5 @@ defs = Definitions(
     assets=all_assets,
     resources=resource_defs,
     jobs=[materialize_assets_job],
-    schedules=[materialize_all_schedule],
+    schedules=[materialize_all_schedule, materialize_test_schedule],
 )
