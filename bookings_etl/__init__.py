@@ -47,6 +47,10 @@ for tenant in tenant_settings:
     supabase_booking_values_def = create_supabase_public_booking_values_asset(tenant['tenant_id'], tenant_name)
     all_assets.append(supabase_booking_values_def)
     
+    # Create Supabase public reports view asset
+    supabase_reports_view_def = create_supabase_public_reports_view_asset(tenant['tenant_id'], tenant_name)
+    all_assets.append(supabase_reports_view_def)
+    
     
 # Define resources
 resource_defs = {

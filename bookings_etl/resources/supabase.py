@@ -73,3 +73,8 @@ def remove_duplicates(upsert_data, key_columns):
             seen.add(key)
             unique_data.append(item)
     return unique_data
+
+def fetch_reports_view_df(supabase: Client, tenant_id: str) -> pd.DataFrame:
+    response = supabase.table("reports_view").select("*").eq("tenant_id", tenant_id).execute()
+    
+    return pd.DataFrame(response.data)

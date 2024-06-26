@@ -4,3 +4,4 @@
 from .supabase_public_rentals import create_supabase_public_rentals_asset
 from .supabase_public_bookings import create_supabase_public_bookings_asset
 from .supabase_public_booking_values import create_supabase_public_booking_values_asset
+from .supabase_public_reports_view import create_supabase_public_reports_view_asset
